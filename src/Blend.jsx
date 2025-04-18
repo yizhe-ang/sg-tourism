@@ -263,6 +263,7 @@ const fragmentShader = /* glsl */ `
     // FIXME: Blend first, then do all the refinement steps?
 
     // outputColor = vec4(blendedColor, 1.0) * watercolorColor;
+    // outputColor = vec4(kuwaharaColor, 1.0);
     outputColor = vec4(vec3(trail), 1.0);
   }
 `;

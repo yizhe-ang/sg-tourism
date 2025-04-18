@@ -1,6 +1,7 @@
 import {
   CameraControls,
   OrbitControls,
+  RenderTexture,
   Sky,
   useFBO,
   useTexture,
@@ -17,32 +18,38 @@ import {
 } from "@react-three/postprocessing";
 import { GlitchMode, BlendFunction, ToneMappingMode } from "postprocessing";
 import Blend from "./Blend.jsx";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import { folder, useControls } from "leva";
 import River from "./River.jsx";
-import { extend, useFrame, useThree } from "@react-three/fiber";
+import { createPortal, extend, useFrame, useThree } from "@react-three/fiber";
 import CustomNormalMaterial from "./customNormalMaterial";
 import WatercolorMaterial from "./watercolorMaterial.js";
 import { useBrush } from "@funtech-inc/use-shader-fx";
+import * as THREE from "three";
 
 extend({ WatercolorMaterial });
 
 export default function Experience() {
+  const watercolorMaterialRef = useRef();
+
   const { size, dpr } = useThree((state) => {
     return { size: state.size, dpr: state.viewport.dpr };
   });
 
-  // const fluidProps = useControls({
-  //   fluid: folder({
-  //     densityDissipation: { value: 0.98, min: 0, max: 1, step: 0.01 },
-  //     velocityDissipation: { value: 0.99, min: 0, max: 1, step: 0.01 },
-  //     velocityAcceleration: { value: 10, min: 0, max: 100, step: 1 },
-  //     pressureDissipation: { value: 0.9, min: 0, max: 1, step: 0.01 },
-  //     pressureIterations: { value: 20, min: 0, max: 30, step: 1 },
-  //     curlStrength: { value: 35, min: 0, max: 100, step: 1 },
-  //     splatRadius: { value: 0.002, min: 0, max: 0.2, step: 0.001 },
-  //   }),
-  // });
+  const brushProps = useControls({
+    brush: folder({
+      // radius: { value: 0.05, min: 0, max: 0.1, step: 0.01 },
+      // smudge: { value: 0, min: 0, max: 10, step: 0.01 },
+      // dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
+      // motionBlur: { value: 0, min: 0, max: 10, step: 0.01 },
+      // motionSample: { value: 5, min: 0, max: 20, step: 1 },
+      radius: { value: 0.1, min: 0, max: 0.1, step: 0.01 },
+      smudge: { value: 10, min: 0, max: 10, step: 0.01 },
+      dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
+      motionBlur: { value: 0, min: 0, max: 10, step: 0.01 },
+      motionSample: { value: 5, min: 0, max: 20, step: 1 },
+    }),
+  });
 
   const watercolorTexture = useTexture("textures/watercolor.png");
 
@@ -50,27 +57,23 @@ export default function Experience() {
 
   const [updateBrush, , { output: brushTexture }] = useBrush({
     size,
+    // FIXME: Can lower this for performance
     dpr,
   });
-  console.log(brushTexture)
 
-  // const {
-  //   render: updateFluid,
-  //   texture: fluidTexture,
-  //   setValues: setFluidParams,
-  // } = useFluid({
-  //   size: {
-  //     width: size.width,
-  //     height: size.height,
-  //   },
-  //   // FIXME: Can lower this for performance
-  //   dpr: 1,
-  // });
+  // Ping-pong watercolor dissipation effect
+  const watercolorScene = useMemo(() => new THREE.Scene(), []);
+  const watercolorCamera = useMemo(
+    () => new THREE.OrthographicCamera(-1, 1, 1, -1, 1 / Math.pow(2, 53), 1),
+    []
+  );
+  let targetA = useFBO();
+  let targetB = useFBO();
 
-  useFrame((rootState) => {
+  useFrame((rootState, delta) => {
     const { gl, scene, camera } = rootState;
 
-    updateBrush(rootState)
+    updateBrush(rootState, brushProps);
 
     // Get normal information
     const originalSceneMaterial = scene.overrideMaterial;
@@ -82,6 +85,19 @@ export default function Experience() {
     gl.render(scene, camera);
 
     scene.overrideMaterial = originalSceneMaterial;
+
+    // // Compute watercolor effect
+    // gl.setRenderTarget(targetA);
+    // gl.render(watercolorScene, watercolorCamera);
+
+    // watercolorMaterialRef.current.uBrush = brushTexture;
+    // watercolorMaterialRef.current.uPrev = targetA.texture;
+    // watercolorMaterialRef.current.uTime += delta;
+
+    // // Ping-pong swap
+    // let temp = targetA;
+    // targetA = targetB;
+    // targetB = temp;
 
     // Final
     gl.setRenderTarget(null);
@@ -134,6 +150,24 @@ export default function Experience() {
       <Sky />
 
       <River />
+
+      {createPortal(
+        <>
+          <mesh>
+            <planeGeometry args={[2, 2]} />
+            <watercolorMaterial
+              ref={watercolorMaterialRef}
+              key={WatercolorMaterial.key}
+            >
+              {/* Initialize texture as white */}
+              <RenderTexture attach="uPrev">
+                <color attach="background" args={["white"]} />
+              </RenderTexture>
+            </watercolorMaterial>
+          </mesh>
+        </>,
+        watercolorScene
+      )}
 
       <directionalLight castShadow position={[1, 2, 3]} intensity={4.5} />
       <ambientLight intensity={1.5} />
