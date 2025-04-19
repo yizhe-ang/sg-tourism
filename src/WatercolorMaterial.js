@@ -2,7 +2,7 @@ import { shaderMaterial } from "@react-three/drei";
 import * as THREE from "three";
 
 const WatercolorMaterial = shaderMaterial(
-  { uBrush: null, uPrev: null, uTime: 0, uResolution: new THREE.Vector2(1, 1) },
+  { uBrush: null, uPrev: null, uTime: 0, uResolution: new THREE.Vector2(1, 1), uFade1: 0.7 },
   // vertex shader
   /* glsl */ `
     varying vec2 vUv;
@@ -19,6 +19,7 @@ const WatercolorMaterial = shaderMaterial(
     uniform sampler2D uPrev;
     uniform vec2 uResolution;
     uniform float uTime;
+    uniform float uFade1;
 
     varying vec2 vUv;
 
@@ -103,16 +104,13 @@ const WatercolorMaterial = shaderMaterial(
       vec2 aspect = vec2(1.0, uResolution.y / uResolution.x);
 
       // Increase flood after a set time
-      // float floodStart = 0.01;
-      // float floodEnd = 0.03;
-      // float floodEnd = 0.015;
-      // float floodMix = smoothstep(3.0, 4.0, uTime);
+      // float floodStart = 0.00;
+      // float floodEnd = 0.025;
+      // float floodMix = smoothstep(2.5, 4.0, uTime);
 
-      float floodStart = 0.00;
-      float floodEnd = 0.025;
-      float floodMix = smoothstep(2.5, 4.0, uTime);
+      // float flood = mix(floodStart, floodEnd, floodMix);
 
-      float flood = mix(floodStart, floodEnd, floodMix);
+      float flood = 0.005;
 
       vec2 disp = fbm(vUv * 22.0, 4) * aspect * flood;
 
@@ -134,12 +132,11 @@ const WatercolorMaterial = shaderMaterial(
       vec3 lcolor = vec3(1.0 - brush);
 
       // Gradually fade out
-      float fade1 = 0.7;
-      vec3 waterColor = blendDarken(prev.rgb, floodcolor * (1.0 + 0.02), fade1);
+      vec3 waterColor = blendDarken(prev.rgb, floodcolor * (1.0 + 0.02), uFade1);
 
       vec3 finalColor = blendDarken(waterColor, lcolor, 1.0);
 
-      // More fading out
+      // Fade out the entire thing
       float fade2 = 0.001;
 
       vec4 final = vec4(

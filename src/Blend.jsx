@@ -2,6 +2,7 @@ import { wrapEffect } from "@react-three/postprocessing";
 import { Effect, EffectAttribute, BlendFunction } from "postprocessing";
 import { forwardRef, useMemo } from "react";
 import { Uniform } from "three";
+import gradientNoise from "./gradientNoise";
 
 const fragmentShader = /* glsl */ `
   #define SECTOR_COUNT 8
@@ -12,10 +13,14 @@ const fragmentShader = /* glsl */ `
   uniform float frequency;
   uniform float amplitude;
   uniform float shadowType;
+  uniform float outlineThickness;
 
   uniform sampler2D watercolorTexture;
+  uniform sampler2D cloudTexture;
 
   uniform sampler2D trailTexture;
+
+  ${gradientNoise}
 
   float random(vec2 c) {
       return fract(sin(dot(c.xy, vec2(12.9898, 78.233))) * 43758.5453);
@@ -135,7 +140,6 @@ const fragmentShader = /* glsl */ `
     vec3 kuwaharaColor = refineColor(finalColor);
 
     // SKETCH ##################################################################
-    float outlineThickness = 1.5;
     vec4 outlineColor = vec4(0.0, 0.0, 0.0, 1.0);
 
     vec4 pixelColor = inputColor;
@@ -157,6 +161,7 @@ const fragmentShader = /* glsl */ `
     float depth21 = readDepth(uv + displacement + outlineThickness * texelSize * vec2(1, 0));
     float depth22 = readDepth(uv + displacement + outlineThickness * texelSize * vec2(1, 1));
 
+    // Sobel operations
     float xSobelValueDepth =
       Sx[0][0] * depth00 + Sx[1][0] * depth01 + Sx[2][0] * depth02 +
       Sx[0][1] * depth10 + Sx[1][1] * depth11 + Sx[2][1] * depth12 +
@@ -192,6 +197,11 @@ const fragmentShader = /* glsl */ `
       Sy[0][2] * normal02 + Sy[1][2] * normal12 + Sy[2][2] * normal22;
 
     float gradientNormal = sqrt(pow(xSobelNormal, 2.0) + pow(ySobelNormal, 2.0));
+
+    // Add noise
+    float noiseValue = noise(gl_FragCoord.xy);
+    noiseValue = noiseValue * 2.0 - 1.0;
+    noiseValue *= 10.0;
 
     float outline = gradientDepth * 25.0 + gradientNormal;
 
@@ -255,42 +265,75 @@ const fragmentShader = /* glsl */ `
     // Blend using trail
     float trail = texture2D(trailTexture, uv).r;
 
-    vec3 blendedColor = mix(sketchColor, kuwaharaColor, trail * 10.0);
+    // vec3 blendedColor = mix(sketchColor, kuwaharaColor, trail);
+    vec3 blendedColor = mix(kuwaharaColor, sketchColor, trail);
 
     // Apply watercolor texture
     vec4 watercolorColor = texture2D(watercolorTexture, uv);
 
     // FIXME: Blend first, then do all the refinement steps?
 
+    // FIXME: Add extra colorful watercolor splotches
+    // TODO: More dynamic watercolor effects
+
     // outputColor = vec4(blendedColor, 1.0) * watercolorColor;
-    // outputColor = vec4(kuwaharaColor, 1.0);
-    outputColor = vec4(vec3(trail), 1.0);
+    // outputColor = vec4(sketchColor, 1.0);
+    // outputColor = texture2D(tNormal, uv);
+    outputColor = vec4(vec3(outline), 1.0);
   }
 `;
 
 class BlendEffect extends Effect {
   constructor({
-    radius = 1,
+    radius = 5,
     tNormal,
     frequency = 0.05,
     amplitude = 2.0,
     shadowType = 2.0,
+    outlineThickness = 0.5,
     watercolorTexture,
+    cloudTexture,
     trailTexture,
   }) {
+    const uniforms = new Map([
+      ["radius", new Uniform(radius)],
+      ["tNormal", new Uniform(tNormal)],
+      ["frequency", new Uniform(frequency)],
+      ["amplitude", new Uniform(amplitude)],
+      ["shadowType", new Uniform(shadowType)],
+      ["outlineThickness", new Uniform(outlineThickness)],
+      ["watercolorTexture", new Uniform(watercolorTexture)],
+      ["cloudTexture", new Uniform(cloudTexture)],
+      ["trailTexture", new Uniform(trailTexture)],
+    ]);
+
     super("Blend", fragmentShader, {
       attributes: EffectAttribute.DEPTH,
       // blendFunction: BlendFunction.NORMAL,
-      uniforms: new Map([
-        ["radius", new Uniform(radius)],
-        ["tNormal", new Uniform(tNormal)],
-        ["frequency", new Uniform(frequency)],
-        ["amplitude", new Uniform(amplitude)],
-        ["shadowType", new Uniform(shadowType)],
-        ["watercolorTexture", new Uniform(watercolorTexture)],
-        ["trailTexture", new Uniform(trailTexture)],
-      ]),
+      uniforms,
     });
+
+    this.uniforms = uniforms;
+  }
+
+  set radius(value) {
+    this.uniforms.get("radius").value = value;
+  }
+
+  set frequency(value) {
+    this.uniforms.get("frequency").value = value;
+  }
+
+  set amplitude(value) {
+    this.uniforms.get("amplitude").value = value;
+  }
+
+  set shadowType(value) {
+    this.uniforms.get("shadowType").value = value;
+  }
+
+  set outlineThickness(value) {
+    this.uniforms.get("outlineThickness").value = value;
   }
 }
 

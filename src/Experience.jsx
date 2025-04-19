@@ -48,10 +48,22 @@ export default function Experience() {
       dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
       motionBlur: { value: 0, min: 0, max: 10, step: 0.01 },
       motionSample: { value: 5, min: 0, max: 20, step: 1 },
-    }),
+    }, { collapsed: true }),
   });
 
+  // Create an all-white texture
+  const whiteTexture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "white";
+    context.fillRect(0, 0, 1, 1);
+    return new THREE.CanvasTexture(canvas);
+  }, []);
+
   const watercolorTexture = useTexture("textures/watercolor.png");
+  const cloudTexture = useTexture("textures/cloud-noise.png");
 
   const normalRenderTarget = useFBO();
 
@@ -86,18 +98,18 @@ export default function Experience() {
 
     scene.overrideMaterial = originalSceneMaterial;
 
-    // // Compute watercolor effect
-    // gl.setRenderTarget(targetA);
-    // gl.render(watercolorScene, watercolorCamera);
+    // Compute watercolor effect
+    gl.setRenderTarget(targetA);
+    gl.render(watercolorScene, watercolorCamera);
 
-    // watercolorMaterialRef.current.uBrush = brushTexture;
-    // watercolorMaterialRef.current.uPrev = targetA.texture;
-    // watercolorMaterialRef.current.uTime += delta;
+    watercolorMaterialRef.current.uBrush = brushTexture;
+    watercolorMaterialRef.current.uPrev = targetA.texture;
+    watercolorMaterialRef.current.uTime += delta;
 
-    // // Ping-pong swap
-    // let temp = targetA;
-    // targetA = targetB;
-    // targetB = temp;
+    // Ping-pong swap
+    let temp = targetA;
+    targetA = targetB;
+    targetB = temp;
 
     // Final
     gl.setRenderTarget(null);
@@ -105,8 +117,8 @@ export default function Experience() {
 
   return (
     <>
-      {/* <color args={["#ffffff"]} attach="background" /> */}
-      <color args={["black"]} attach="background" />
+      <color args={["#ffffff"]} attach="background" />
+      {/* <color args={["black"]} attach="background" /> */}
 
       {/* FIXME: Play around with a bunch of post-processing effects */}
       <EffectComposer multisampling={0}>
@@ -138,7 +150,8 @@ export default function Experience() {
         <Blend
           tNormal={normalRenderTarget.texture}
           watercolorTexture={watercolorTexture}
-          trailTexture={brushTexture}
+          cloudTexture={cloudTexture}
+          trailTexture={targetA.texture}
         />
         {/* <ToneMapping mode={ToneMappingMode.ACES_FILMIC} /> */}
       </EffectComposer>
@@ -158,12 +171,8 @@ export default function Experience() {
             <watercolorMaterial
               ref={watercolorMaterialRef}
               key={WatercolorMaterial.key}
-            >
-              {/* Initialize texture as white */}
-              <RenderTexture attach="uPrev">
-                <color attach="background" args={["white"]} />
-              </RenderTexture>
-            </watercolorMaterial>
+              uPrev={whiteTexture}
+            ></watercolorMaterial>
           </mesh>
         </>,
         watercolorScene
