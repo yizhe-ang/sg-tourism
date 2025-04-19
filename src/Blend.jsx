@@ -7,6 +7,8 @@ import sketchy from "./shaders/sketchy";
 import kuwahara from "./shaders/kuwahara";
 
 const fragmentShader = /* glsl */ `
+  uniform float type;
+
   uniform float radius;
 
   uniform sampler2D tNormal;
@@ -107,16 +109,28 @@ const fragmentShader = /* glsl */ `
     // FIXME: Add extra colorful watercolor splotches
     // TODO: More dynamic watercolor effects
 
-    // vec4 o = kuwaharaColor;
-    // vec4 o = inputColor;
-    vec4 o = blendedColor;
+    vec4 o;
 
-    outputColor = o * watercolorColor;
+    if (type == 0.0) {
+      o = inputColor;
+    }
+    else if (type == 1.0) {
+      o = sketchyColor * watercolorColor;
+    }
+    else if (type == 2.0) {
+      o = kuwaharaColor * watercolorColor;
+    }
+    else if (type == 3.0) {
+      o = blendedColor * watercolorColor;
+    }
+
+    outputColor = o;
   }
 `;
 
 class BlendEffect extends Effect {
   constructor({
+    type = 1,
     radius = 5,
     tNormal,
     frequency = 0.05,
@@ -128,6 +142,7 @@ class BlendEffect extends Effect {
     trailTexture,
   }) {
     const uniforms = new Map([
+      ["type", new Uniform(type)],
       ["radius", new Uniform(radius)],
       ["tNormal", new Uniform(tNormal)],
       ["frequency", new Uniform(frequency)],
@@ -146,6 +161,10 @@ class BlendEffect extends Effect {
     });
 
     this.uniforms = uniforms;
+  }
+
+  set type(value) {
+    this.uniforms.get("type").value = value;
   }
 
   set radius(value) {

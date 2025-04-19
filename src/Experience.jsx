@@ -55,6 +55,15 @@ export default function Experience() {
   });
   const blendProps = useControls({
     blend: folder({
+      type: {
+        value: 1.0,
+        options: {
+          original: 0.0,
+          sketch: 1.0,
+          paint: 2.0,
+          blended: 3.0,
+        },
+      },
       radius: { value: 5, min: 1, max: 35, step: 1 },
       amplitude: { value: 2, min: 0, max: 5, step: 0.1 },
       frequency: { value: 0.08, min: 0, max: 0.15, step: 0.01 },
@@ -80,7 +89,7 @@ export default function Experience() {
     return new THREE.CanvasTexture(canvas);
   }, []);
 
-  const watercolorTexture = useTexture("textures/watercolor.png");
+  const watercolorTexture = useTexture("textures/watercolor_2.jpg");
   const cloudTexture = useTexture("textures/cloud-noise.png");
 
   const normalRenderTarget = useFBO();
