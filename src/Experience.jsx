@@ -37,18 +37,36 @@ export default function Experience() {
   });
 
   const brushProps = useControls({
-    brush: folder({
-      // radius: { value: 0.05, min: 0, max: 0.1, step: 0.01 },
-      // smudge: { value: 0, min: 0, max: 10, step: 0.01 },
-      // dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
-      // motionBlur: { value: 0, min: 0, max: 10, step: 0.01 },
-      // motionSample: { value: 5, min: 0, max: 20, step: 1 },
-      radius: { value: 0.1, min: 0, max: 0.1, step: 0.01 },
-      smudge: { value: 10, min: 0, max: 10, step: 0.01 },
-      dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
-      motionBlur: { value: 0, min: 0, max: 10, step: 0.01 },
-      motionSample: { value: 5, min: 0, max: 20, step: 1 },
-    }, { collapsed: true }),
+    brush: folder(
+      {
+        // radius: { value: 0.05, min: 0, max: 0.1, step: 0.01 },
+        // smudge: { value: 0, min: 0, max: 10, step: 0.01 },
+        // dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
+        // motionBlur: { value: 0, min: 0, max: 10, step: 0.01 },
+        // motionSample: { value: 5, min: 0, max: 20, step: 1 },
+        radius: { value: 0.1, min: 0, max: 0.1, step: 0.01 },
+        smudge: { value: 10, min: 0, max: 10, step: 0.01 },
+        dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
+        motionBlur: { value: 0, min: 0, max: 10, step: 0.01 },
+        motionSample: { value: 5, min: 0, max: 20, step: 1 },
+      },
+      { collapsed: true }
+    ),
+  });
+  const blendProps = useControls({
+    blend: folder({
+      radius: { value: 1, min: 1, max: 35, step: 1 },
+      amplitude: { value: 2, min: 0, max: 5, step: 0.1 },
+      frequency: { value: 0.08, min: 0, max: 0.15, step: 0.01 },
+      shadowType: {
+        value: 3.0,
+        options: {
+          tonal: 1.0,
+          raster: 2.0,
+          crosshatch: 3.0,
+        },
+      },
+    }),
   });
 
   // Create an all-white texture
@@ -152,6 +170,7 @@ export default function Experience() {
           watercolorTexture={watercolorTexture}
           cloudTexture={cloudTexture}
           trailTexture={targetA.texture}
+          {...blendProps}
         />
         {/* <ToneMapping mode={ToneMappingMode.ACES_FILMIC} /> */}
       </EffectComposer>
