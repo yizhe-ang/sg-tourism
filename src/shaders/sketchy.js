@@ -38,6 +38,8 @@ float valueAtPoint(sampler2D image, vec2 coord, vec2 texel, vec2 point) {
 float diffuseValue(int x, int y, vec2 uResolution, vec2 vUv, sampler2D uTexture, sampler2D tDiffuse) {
     float cutoff = 40.0;
     float offset =  0.5 / cutoff;
+
+    // TODO: Adjust this noiseValue?
     float noiseValue = clamp(texture(uTexture, vUv).r, 0.0, cutoff) / cutoff - offset;
 
     return valueAtPoint(tDiffuse, vUv + noiseValue, vec2(1.0 / uResolution.x, 1.0 / uResolution.y), vec2(x, y)) * 0.6;
@@ -46,6 +48,8 @@ float diffuseValue(int x, int y, vec2 uResolution, vec2 vUv, sampler2D uTexture,
 float normalValue(int x, int y, vec2 uResolution, vec2 vUv, sampler2D uTexture, sampler2D uNormals) {
     float cutoff = 50.0;
     float offset = 0.5 / cutoff;
+
+    // TODO: Adjust this noiseValue?
     float noiseValue = clamp(texture(uTexture, vUv).r, 0.0, cutoff) / cutoff - offset;
 
     return valueAtPoint(uNormals, vUv + noiseValue, vec2(1.0 / uResolution.x, 1.0 / uResolution.y), vec2(x, y)) * 0.3;
@@ -59,7 +63,7 @@ float getValue(int x, int y, vec2 uResolution, vec2 vUv, sampler2D uTexture, sam
     return diffuseValue(x, y, uResolution, vUv, uTexture, tDiffuse) + normalValue(x, y, uResolution, vUv, uTexture, tNormals) * noiseValue;
 }
 
-float getSketchyOutline(vec2 vUv, vec2 uResolution, sampler2D uTexture, sampler2D tDiffuse, sampler2D tNormals) {
+float getSketchyOutline(vec2 vUv, vec2 uResolution, sampler2D uTexture, sampler2D tDiffuse, sampler2D tNormals, float outlineThreshold) {
     // kernel definition (in glsl matrices are filled in column-major order)
     const mat3 Gx = mat3(-1, -2, -1, 0, 0, 0, 1, 2, 1);// x direction kernel
     const mat3 Gy = mat3(-1, 0, 1, -2, 0, 2, -1, 0, 1);// y direction kernel
@@ -95,9 +99,16 @@ float getSketchyOutline(vec2 vUv, vec2 uResolution, sampler2D uTexture, sampler2
     float G = (valueGx * valueGx) + (valueGy * valueGy);
 
     float sobelValue = clamp(G, 0.0, 1.0);
-    sobelValue = smoothstep(0.01, 0.03, sobelValue);
+    // sobelValue = smoothstep(0.01, 0.03, sobelValue);
 
-    return step(0.1, sobelValue);
+    // TODO: Randomness here?
+    // You could adjust the line thickness by modulating the threshold of what is considered an edge based on a noise texture.
+    float noiseValue = noise(gl_FragCoord.xy * 10.0);
+    // noiseValue = noiseValue * 2.0 - 1.0;
+    // noiseValue *= 10.0;
+
+    // return step(outlineThreshold + noiseValue, sobelValue);
+    return step(outlineThreshold, sobelValue);
 }
 `;
 

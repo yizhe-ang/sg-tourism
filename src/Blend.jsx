@@ -16,6 +16,7 @@ const fragmentShader = /* glsl */ `
   uniform float amplitude;
   uniform float shadowType;
   uniform float outlineThickness;
+  uniform float outlineThreshold;
 
   uniform sampler2D watercolorTexture;
   uniform sampler2D cloudTexture;
@@ -86,7 +87,7 @@ const fragmentShader = /* glsl */ `
     vec4 kuwaharaColor = vec4(refineColor(getKuwaharaColor(inputColor.rgb, radius, inputBuffer, resolution)), 1.0);
 
     // SKETCH ##################################################################
-    float sketchyOutline = getSketchyOutline(uv, resolution, cloudTexture, inputBuffer, tNormal);
+    float sketchyOutline = getSketchyOutline(uv, resolution, cloudTexture, inputBuffer, tNormal, outlineThreshold);
 
     vec4 sketchyColor = mix(bgColor, outlineColor, sketchyOutline);
 
@@ -137,6 +138,7 @@ class BlendEffect extends Effect {
     amplitude = 2.0,
     shadowType = 2.0,
     outlineThickness = 0.5,
+    outlineThreshold = 0.1,
     watercolorTexture,
     cloudTexture,
     trailTexture,
@@ -149,6 +151,7 @@ class BlendEffect extends Effect {
       ["amplitude", new Uniform(amplitude)],
       ["shadowType", new Uniform(shadowType)],
       ["outlineThickness", new Uniform(outlineThickness)],
+      ["outlineThreshold", new Uniform(outlineThreshold)],
       ["watercolorTexture", new Uniform(watercolorTexture)],
       ["cloudTexture", new Uniform(cloudTexture)],
       ["trailTexture", new Uniform(trailTexture)],
@@ -156,7 +159,6 @@ class BlendEffect extends Effect {
 
     super("Blend", fragmentShader, {
       attributes: EffectAttribute.DEPTH,
-      // blendFunction: BlendFunction.NORMAL,
       uniforms,
     });
 
@@ -185,6 +187,10 @@ class BlendEffect extends Effect {
 
   set outlineThickness(value) {
     this.uniforms.get("outlineThickness").value = value;
+  }
+
+  set outlineThreshold(value) {
+    this.uniforms.get("outlineThreshold").value = value;
   }
 }
 

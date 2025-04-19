@@ -67,6 +67,7 @@ export default function Experience() {
       radius: { value: 5, min: 1, max: 35, step: 1 },
       amplitude: { value: 2, min: 0, max: 5, step: 0.1 },
       frequency: { value: 0.08, min: 0, max: 0.15, step: 0.01 },
+      outlineThreshold: { value: 0.2, min: 0, max: 1.1, step: 0.01 },
       shadowType: {
         value: 3.0,
         options: {
