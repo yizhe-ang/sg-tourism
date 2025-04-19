@@ -97,8 +97,7 @@ float getSketchyOutline(vec2 vUv, vec2 uResolution, sampler2D uTexture, sampler2
     float sobelValue = clamp(G, 0.0, 1.0);
     sobelValue = smoothstep(0.01, 0.03, sobelValue);
 
-    // return step(0.1, sobelValue);
-    return step(1.0, sobelValue);
+    return step(0.1, sobelValue);
 }
 `;
 

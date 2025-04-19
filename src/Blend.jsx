@@ -4,6 +4,7 @@ import { forwardRef, useMemo } from "react";
 import { Uniform } from "three";
 import gradientNoise from "./shaders/gradientNoise";
 import sketchy from "./shaders/sketchy";
+import kuwahara from "./shaders/kuwahara";
 
 const fragmentShader = /* glsl */ `
   uniform float radius;
@@ -68,20 +69,24 @@ const fragmentShader = /* glsl */ `
     return refinedColor;
   }
 
+  ${kuwahara}
   ${sketchy}
 
   void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor)
   {
+    vec4 bgColor = vec4(0.957, 0.941, 0.910, 1.0);
     vec4 outlineColor = vec4(0.32, 0.12, 0.2, 1.0);
     vec4 watercolorColor = texture2D(watercolorTexture, uv);
 
     // KUWAHARA ################################################################
+    // vec4 kuwaharaColor = vec4(refineColor(inputColor.rgb), 1.0);
 
-
-    // vec3 kuwaharaColor = refineColor(finalColor);
+    vec4 kuwaharaColor = vec4(refineColor(getKuwaharaColor(inputColor.rgb, radius, inputBuffer, resolution)), 1.0);
 
     // SKETCH ##################################################################
     float sketchyOutline = getSketchyOutline(uv, resolution, cloudTexture, inputBuffer, tNormal);
+
+    vec4 sketchyColor = mix(bgColor, outlineColor, sketchyOutline);
 
     // Stylized shadows
 
@@ -93,7 +98,7 @@ const fragmentShader = /* glsl */ `
     // Blend using trail
     float trail = texture2D(trailTexture, uv).r;
 
-    // vec3 blendedColor = mix(kuwaharaColor, sketchColor, trail);
+    vec4 blendedColor = mix(kuwaharaColor, sketchyColor, trail);
 
     // Apply watercolor texture
 
@@ -102,11 +107,11 @@ const fragmentShader = /* glsl */ `
     // FIXME: Add extra colorful watercolor splotches
     // TODO: More dynamic watercolor effects
 
-    vec4 o = outlineColor * sketchyOutline;
+    // vec4 o = kuwaharaColor;
+    // vec4 o = inputColor;
+    vec4 o = blendedColor;
 
-    // outputColor = vec4(vec3(sketchyOutline), 1.0);
     outputColor = o * watercolorColor;
-    // outputColor = vec4(vec3(0.3), 1.0);
   }
 `;
 

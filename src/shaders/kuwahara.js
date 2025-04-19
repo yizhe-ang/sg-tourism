@@ -39,8 +39,8 @@ void getSectorVarianceAndAverageColor(float angle, float radius, out vec3 avgCol
 vec3 getKuwaharaColor(vec3 color, float radius, sampler2D inputBuffer, vec2 resolution) {
   int sectorCount = 8;
 
-  vec3 sectorAvgColors[sectorCount];
-  float sectorVariances[sectorCount];
+  vec3 sectorAvgColors[8];
+  float sectorVariances[8];
 
   for (int i = 0; i < sectorCount; i++) {
     float angle = float(i) * 6.28318 / float(sectorCount); // 2π / sectorCount
