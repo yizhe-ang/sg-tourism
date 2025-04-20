@@ -1,8 +1,6 @@
 import { wrapEffect } from "@react-three/postprocessing";
-import { Effect, EffectAttribute, BlendFunction } from "postprocessing";
-import { forwardRef, useMemo } from "react";
-import { Uniform } from "three";
-import gradientNoise from "./shaders/gradientNoise";
+import { Effect, EffectAttribute } from "postprocessing";
+import { Color, Uniform } from "three";
 import sketchy from "./shaders/sketchy";
 import kuwahara from "./shaders/kuwahara";
 
@@ -17,6 +15,7 @@ const fragmentShader = /* glsl */ `
   uniform float shadowType;
   uniform float outlineThickness;
   uniform float outlineThreshold;
+  uniform vec3 outlineColor;
 
   uniform sampler2D watercolorTexture;
   uniform sampler2D cloudTexture;
@@ -78,7 +77,7 @@ const fragmentShader = /* glsl */ `
   void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor)
   {
     vec4 bgColor = vec4(0.957, 0.941, 0.910, 1.0);
-    vec4 outlineColor = vec4(0.32, 0.12, 0.2, 1.0);
+    // vec4 outlineColor = vec4(0.32, 0.12, 0.2, 1.0);
     vec4 watercolorColor = texture2D(watercolorTexture, uv);
 
     // KUWAHARA ################################################################
@@ -89,7 +88,8 @@ const fragmentShader = /* glsl */ `
     // SKETCH ##################################################################
     float sketchyOutline = getSketchyOutline(uv, resolution, cloudTexture, inputBuffer, tNormal, outlineThreshold);
 
-    vec4 sketchyColor = mix(bgColor, outlineColor, sketchyOutline);
+    // vec4 sketchyColor = mix(bgColor, outlineColor, sketchyOutline);
+    vec4 sketchyColor = mix(bgColor, vec4(outlineColor, 1.0), sketchyOutline);
 
     // Stylized shadows
 
@@ -139,6 +139,7 @@ class BlendEffect extends Effect {
     shadowType = 2.0,
     outlineThickness = 0.5,
     outlineThreshold = 0.1,
+    outlineColor,
     watercolorTexture,
     cloudTexture,
     trailTexture,
@@ -152,6 +153,7 @@ class BlendEffect extends Effect {
       ["shadowType", new Uniform(shadowType)],
       ["outlineThickness", new Uniform(outlineThickness)],
       ["outlineThreshold", new Uniform(outlineThreshold)],
+      ["outlineColor", new Uniform(new Color(outlineColor))],
       ["watercolorTexture", new Uniform(watercolorTexture)],
       ["cloudTexture", new Uniform(cloudTexture)],
       ["trailTexture", new Uniform(trailTexture)],
@@ -191,6 +193,10 @@ class BlendEffect extends Effect {
 
   set outlineThreshold(value) {
     this.uniforms.get("outlineThreshold").value = value;
+  }
+
+  set outlineColor(value) {
+    this.uniforms.get("outlineColor").value = new Color(value);
   }
 }
 

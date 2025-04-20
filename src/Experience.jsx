@@ -1,25 +1,9 @@
-import {
-  CameraControls,
-  OrbitControls,
-  RenderTexture,
-  Sky,
-  useFBO,
-  useTexture,
-} from "@react-three/drei";
+import { CameraControls, Sky, useFBO, useTexture } from "@react-three/drei";
 import { Perf } from "r3f-perf";
-import {
-  DepthOfField,
-  Bloom,
-  Noise,
-  Glitch,
-  Vignette,
-  ToneMapping,
-  EffectComposer,
-} from "@react-three/postprocessing";
-import { GlitchMode, BlendFunction, ToneMappingMode } from "postprocessing";
+import { EffectComposer } from "@react-three/postprocessing";
 import Blend from "./Blend.jsx";
 import { useRef, useEffect, useMemo } from "react";
-import { folder, useControls } from "leva";
+import { button, folder, useControls } from "leva";
 import River from "./River.jsx";
 import { createPortal, extend, useFrame, useThree } from "@react-three/fiber";
 import CustomNormalMaterial from "./customNormalMaterial";
@@ -31,9 +15,26 @@ extend({ WatercolorMaterial });
 
 export default function Experience() {
   const watercolorMaterialRef = useRef();
+  const cameraControlsRef = useRef();
 
   const { size, dpr } = useThree((state) => {
     return { size: state.size, dpr: state.viewport.dpr };
+  });
+
+  useControls({
+    camera: folder(
+      {
+        getLookAt: button(() => {
+          const position = cameraControlsRef.current.getPosition();
+          const target = cameraControlsRef.current.getTarget();
+          console.log([...position, ...target]);
+        }),
+        toJson: button(() => console.log(cameraControlsRef.current.toJSON())),
+      },
+      {
+        collapsed: true,
+      }
+    ),
   });
 
   const brushProps = useControls({
@@ -67,7 +68,9 @@ export default function Experience() {
       radius: { value: 5, min: 1, max: 35, step: 1 },
       amplitude: { value: 2, min: 0, max: 5, step: 0.1 },
       frequency: { value: 0.08, min: 0, max: 0.15, step: 0.01 },
-      outlineThreshold: { value: 0.2, min: 0, max: 1.1, step: 0.01 },
+      outlineThreshold: { value: 0.38, min: 0, max: 1.1, step: 0.01 },
+      // outlineColor: "#511E33",
+      outlineColor: "#80415b",
       shadowType: {
         value: 3.0,
         options: {
@@ -76,6 +79,13 @@ export default function Experience() {
           crosshatch: 3.0,
         },
       },
+    }),
+  });
+
+  const { directionalLightIntensity, ambientLightIntensity } = useControls({
+    scene: folder({
+      directionalLightIntensity: { value: 5.5, min: 0, max: 10, step: 0.1 },
+      ambientLightIntensity: { value: 1.6, min: 0, max: 10, step: 0.1 },
     }),
   });
 
@@ -109,6 +119,18 @@ export default function Experience() {
   );
   let targetA = useFBO();
   let targetB = useFBO();
+
+  // Init camera position
+  useEffect(() => {
+    cameraControlsRef.current.setLookAt(
+      ...[
+        -0.000005510131148505397, 3.385863179632328, -0.010913183460704913,
+        -0.0000021243210430414846, 4.6449795421207494e-10,
+        -0.010913164502915206,
+      ],
+      false
+    );
+  }, []);
 
   useFrame((rootState, delta) => {
     const { gl, scene, camera } = rootState;
@@ -146,35 +168,8 @@ export default function Experience() {
   return (
     <>
       <color args={["#ffffff"]} attach="background" />
-      {/* <color args={["black"]} attach="background" /> */}
 
-      {/* FIXME: Play around with a bunch of post-processing effects */}
-      <EffectComposer multisampling={0}>
-        {/* <Vignette
-                offset={ 0.3 }
-                darkness={ 0.9 }
-                blendFunction={ BlendFunction.NORMAL }
-            /> */}
-        {/* <Glitch
-                delay={ [ 0.5, 1 ] }
-                duration={ [ 0.1, 0.3 ] }
-                strength={ [ 0.2, 0.4 ] }
-                mode={ GlitchMode.CONSTANT_MILD }
-            /> */}
-        {/* <Noise
-                premultiply
-                blendFunction={ BlendFunction.SOFT_LIGHT }
-            /> */}
-        {/* <Bloom
-                mipmapBlur
-                intensity={ 0.5 }
-                luminanceThreshold={ 0 }
-            /> */}
-        {/* <DepthOfField
-                focusDistance={ 0.025 }
-                focalLength={ 0.025 }
-                bokehScale={ 6 }
-            /> */}
+      <EffectComposer>
         <Blend
           tNormal={normalRenderTarget.texture}
           watercolorTexture={watercolorTexture}
@@ -187,7 +182,7 @@ export default function Experience() {
 
       <Perf position="top-left" />
 
-      <CameraControls />
+      <CameraControls ref={cameraControlsRef} />
 
       <Sky />
 
@@ -207,8 +202,12 @@ export default function Experience() {
         watercolorScene
       )}
 
-      <directionalLight castShadow position={[1, 2, 3]} intensity={4.5} />
-      <ambientLight intensity={1.5} />
+      <directionalLight
+        castShadow
+        position={[1, 2, 3]}
+        intensity={directionalLightIntensity}
+      />
+      <ambientLight intensity={ambientLightIntensity} />
     </>
   );
 }
