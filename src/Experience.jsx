@@ -21,30 +21,25 @@ export default function Experience() {
     return { size: state.size, dpr: state.viewport.dpr };
   });
 
-  useControls({
-    camera: folder(
-      {
-        getLookAt: button(() => {
-          const position = cameraControlsRef.current.getPosition();
-          const target = cameraControlsRef.current.getTarget();
-          console.log([...position, ...target]);
-        }),
-        toJson: button(() => console.log(cameraControlsRef.current.toJSON())),
-      },
-      {
-        collapsed: true,
-      }
-    ),
-  });
+  // useControls({
+  //   camera: folder(
+  //     {
+  //       getLookAt: button(() => {
+  //         const position = cameraControlsRef.current.getPosition();
+  //         const target = cameraControlsRef.current.getTarget();
+  //         console.log([...position, ...target]);
+  //       }),
+  //       toJson: button(() => console.log(cameraControlsRef.current.toJSON())),
+  //     },
+  //     {
+  //       collapsed: true,
+  //     }
+  //   ),
+  // });
 
   const brushProps = useControls({
     brush: folder(
       {
-        // radius: { value: 0.05, min: 0, max: 0.1, step: 0.01 },
-        // smudge: { value: 0, min: 0, max: 10, step: 0.01 },
-        // dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
-        // motionBlur: { value: 0, min: 0, max: 10, step: 0.01 },
-        // motionSample: { value: 5, min: 0, max: 20, step: 1 },
         radius: { value: 0.1, min: 0, max: 0.1, step: 0.01 },
         smudge: { value: 10, min: 0, max: 10, step: 0.01 },
         dissipation: { value: 1, min: 0, max: 1, step: 0.01 },
@@ -57,7 +52,7 @@ export default function Experience() {
   const blendProps = useControls({
     blend: folder({
       type: {
-        value: 1.0,
+        value: 3.0,
         options: {
           original: 0.0,
           sketch: 1.0,
@@ -180,7 +175,7 @@ export default function Experience() {
         {/* <ToneMapping mode={ToneMappingMode.ACES_FILMIC} /> */}
       </EffectComposer>
 
-      <Perf position="top-left" />
+      {/* <Perf position="top-left" /> */}
 
       <CameraControls ref={cameraControlsRef} />
 
