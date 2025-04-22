@@ -2,7 +2,7 @@
 
 🖥️ **LIVE DEMO: https://yizhe-ang.github.io/sg-tourism/**
 
-Playing around with stylized post-processing shader effects, blending from a sketchy style ✏️ to a painterly style 🎨. 
+Playing around with stylized post-processing shader effects, blending from a sketchy ✏️ to a painterly style 🎨. 
 
 Model is taken from: [Singapore Tourism Board's Tourism Information & Services Hub](https://tih.stb.gov.sg/content/tih/en/media-assets.html?mediaType=3dmodels#/)
 
